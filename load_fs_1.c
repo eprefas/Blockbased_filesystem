@@ -3,6 +3,7 @@
 
 #include <stdio.h>
 
+/* Load an MFT and BAT and perform basic lookups to verify load correctness. */
 int main( int argc, char* argv[] )
 {
     if( argc != 3 )

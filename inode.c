@@ -8,7 +8,7 @@
 #include <ctype.h>
 
 
-// Helper func
+/* Free a single inode structure and its allocated fields. */
 static void free_inode(struct inode* node) {
     if (!node) return;
     free(node->name);
@@ -16,7 +16,7 @@ static void free_inode(struct inode* node) {
     free(node);
 }
 
-//helper func
+/* Validate a filename or directory name. Returns 1 if acceptable. */
 static int is_valid_name(const char* name) {
     if (name == NULL || *name == '\0') return 0;
     if (strcmp(name,"/") == 0) return 1;
@@ -28,8 +28,8 @@ static int is_valid_name(const char* name) {
     return 1;
 }
 
-//helper func
 static uint32_t next_inode_id = 0;
+/* Allocate and initialize a basic inode object (directory or file). */
 static struct inode* create_inode(const char* name, char is_directory, char is_readonly) {
     if (is_valid_name(name) == 0) {
         return NULL;
@@ -57,7 +57,7 @@ static struct inode* create_inode(const char* name, char is_directory, char is_r
     return node;
 }
 
-//helper func
+/* Free blocks referenced by the given extents array by calling free_block. */
 static void free_allocated_extents(struct Extent* extents, uint32_t count) { 
     if (!extents) return;
     for (uint32_t i = 0; i < count; i++) {
@@ -69,8 +69,9 @@ static void free_allocated_extents(struct Extent* extents, uint32_t count) {
     }
 }
 
-
-//helper func
+/* Allocate extents for a file to cover `size_in_bytes`. Uses max extent=4.
+ * On success the file->entries and file->num_entries are populated.
+ */
 static int allocate_blocks_for_file(struct inode* file, uint32_t size_in_bytes) {
     if (file == NULL || file->is_directory) {
         return -1;
@@ -96,7 +97,6 @@ static int allocate_blocks_for_file(struct inode* file, uint32_t size_in_bytes) 
     for (uint32_t i = 0; i < num_extents; i++) {
         uint32_t extent_size = (remaining_blocks > max_extent_size) ? max_extent_size : remaining_blocks;
 
-        // Check for zero length extent
         if (extent_size == 0) {
             fprintf(stderr, "Error: Attempting to allocate zero-length extent\n");
             free_allocated_extents(extents, i);
@@ -124,7 +124,9 @@ static int allocate_blocks_for_file(struct inode* file, uint32_t size_in_bytes) 
     return 0;
 }
 
-
+/* Create a file inode, allocate its blocks, and link it into `parent`.
+ * Returns the new inode or NULL on failure.
+ */
 struct inode* create_file(struct inode* parent, const char* name, char readonly, int size_in_bytes) {
     if (parent != NULL && (*parent).is_directory == 0) { 
         return NULL;
@@ -164,7 +166,7 @@ struct inode* create_file(struct inode* parent, const char* name, char readonly,
     return file;
 }
 
-
+/* Create a directory inode and add it to the parent directory. */
 struct inode* create_dir(struct inode* parent, const char* name) {
     if (!parent && strcmp(name, "/") == 0) {
         struct inode* root = create_inode(name, 1, 0);
@@ -201,7 +203,7 @@ struct inode* create_dir(struct inode* parent, const char* name) {
     return dir;
 }
 
-
+/* Find a direct child of `parent` with matching `name`. */
 struct inode* find_inode_by_name(struct inode* parent, const char* name) {
     if (parent == NULL || !parent->is_directory || name == NULL) {
         return NULL;
@@ -217,7 +219,7 @@ struct inode* find_inode_by_name(struct inode* parent, const char* name) {
     return NULL;
 }
 
-
+/* Remove a file inode from `parent`, free its extents and inode memory. */
 int delete_file(struct inode* parent, struct inode* node) {
     if (!parent || !parent->is_directory || !node || node->is_directory) {
         return -1; 
@@ -234,7 +236,7 @@ int delete_file(struct inode* parent, struct inode* node) {
     if (i == parent->num_entries) {
         return -1; 
     }
-    //important difference between freeing extents here and in create_file
+
     free_allocated_extents((struct Extent*)node->entries, node->num_entries);
 
     memmove(&parent->entries[i], &parent->entries[i + 1],
@@ -255,7 +257,7 @@ int delete_file(struct inode* parent, struct inode* node) {
     return 0; 
 }
 
-
+/* Remove an empty directory inode from `parent` and free it. */
 int delete_dir(struct inode* parent, struct inode* node) {
     if (!parent || !parent->is_directory || !node || !node->is_directory) {
         return -1; 
@@ -295,7 +297,7 @@ int delete_dir(struct inode* parent, struct inode* node) {
     return 0; 
 }
 
-
+/* Recursively write inode entries to the master file table in a simple text format. */
 static void save_inode_recursive(FILE* file, struct inode* node, struct inode* parent) {
     if (node == NULL) {
         return;
@@ -331,7 +333,7 @@ static void save_inode_recursive(FILE* file, struct inode* node, struct inode* p
     }
 }
 
-
+/* Write the entire filesystem rooted at `root` to `master_file_table`. */
 void save_inodes(const char* master_file_table, struct inode* root) {
     FILE* file = fopen(master_file_table, "w");
     if (file == NULL) {
@@ -344,7 +346,18 @@ void save_inodes(const char* master_file_table, struct inode* root) {
     fclose(file);
 }
 
-
+/* Load inodes from a master file table and reconstruct the in-memory tree.
+ * High level steps:
+ *  - Reset/format block allocation table.
+ *  - Open the binary master file table and read a sequence of records.
+ *    Each record encodes: ID, name length + name, flags, filesize (for files),
+ *    number of entries and then either child IDs (for directories) or
+ *    extents (for files).
+ *  - For files, allocate new blocks according to the saved filesize and
+ *    copy or discard the on-disk extent list as appropriate.
+ *  - Build an ID->node map while reading, then perform a second pass to
+ *    convert directory child ID lists into pointers to the in-memory nodes.
+ */
 struct inode* load_inodes(const char* master_file_table) {
     format_disk();
 
@@ -354,6 +367,7 @@ struct inode* load_inodes(const char* master_file_table) {
         return NULL;
     }
 
+    /* Temporary mapping from ID -> allocated node used for the two-pass load */
     struct {
         uint32_t id;
         struct inode* node;
@@ -363,17 +377,19 @@ struct inode* load_inodes(const char* master_file_table) {
     next_inode_id = 0;
     struct inode* root = NULL;
 
+    /* First pass: read all node records and create in-memory nodes. */
     while (1) {
         uint32_t id;
         size_t read = fread(&id, sizeof(uint32_t), 1, file);
         if (read != 1) {
-            if (feof(file)) break;
+            if (feof(file)) break; /* Normal EOF */
             perror("Error reading ID from master file table");
             goto cleanup;
         }
 
         if (id >= next_inode_id) next_inode_id = id + 1;
 
+        /* Read name length and name string */
         uint32_t name_length;
         if (fread(&name_length, sizeof(uint32_t), 1, file) != 1) {
             perror("Error reading name length from master file table");
@@ -398,6 +414,7 @@ struct inode* load_inodes(const char* master_file_table) {
         }
         name[name_length] = '\0'; 
 
+        /* Flags: directory and readonly bytes */
         char is_directory, is_readonly;
         if (fread(&is_directory, 1, 1, file) != 1 ||
             fread(&is_readonly, 1, 1, file) != 1) {
@@ -406,6 +423,7 @@ struct inode* load_inodes(const char* master_file_table) {
             goto cleanup;
         }
 
+        /* Allocate a fresh node structure and populate basic fields */
         struct inode* node = malloc(sizeof(struct inode));
         if (node == NULL) {
             perror("Error in allocate memory for inode");
@@ -420,6 +438,7 @@ struct inode* load_inodes(const char* master_file_table) {
         node->entries = NULL;
         node->num_entries = 0;
 
+        /* Files store a filesize; directories do not. */
         if (!is_directory) {
             if (fread(&node->filesize, sizeof(uint32_t), 1, file) != 1) {
                 perror("Error reading filesize from MFT");
@@ -431,6 +450,8 @@ struct inode* load_inodes(const char* master_file_table) {
             node->filesize = 0;
         }
 
+        /* Read number of entries: for directories this is child ID list length,
+         * for files this is the number of extents recorded on disk. */
         if (fread(&node->num_entries, sizeof(uint32_t), 1, file) != 1) {
             perror("Error reading num_entries from MFT");
             free(name);
@@ -440,6 +461,7 @@ struct inode* load_inodes(const char* master_file_table) {
 
         if (node->num_entries > 0) {
             if (is_directory) {
+                /* Read array of child IDs (uint64_t used on-disk to be portable) */
                 node->entries = calloc(node->num_entries, sizeof(uint64_t));
                 if (node->entries == NULL) {
                     perror("Error in allocate memory for directory entries");
@@ -456,6 +478,7 @@ struct inode* load_inodes(const char* master_file_table) {
                     goto cleanup;
                 }
             } else {
+                /* Read on-disk extent list for files (blockno, extent) pairs */
                 node->entries = calloc(node->num_entries, sizeof(struct Extent));
                 if (node->entries == NULL) {
                     perror("Error in allocate memory for file extents");
@@ -474,7 +497,11 @@ struct inode* load_inodes(const char* master_file_table) {
             }
         }
 
-        // Ensure block allocation is only done for files
+        /* For files: allocate fresh blocks according to filesize. The saved
+         * on-disk extents are read into `original_entries` above; after
+         * allocation we free the on-disk list if the runtime representation
+         * changed. This keeps runtime extents consistent with the BAT.
+         */
         if (!is_directory) {
             struct Extent* original_entries = (struct Extent*)node->entries;
             if (allocate_blocks_for_file(node, node->filesize) != 0) {
@@ -484,12 +511,13 @@ struct inode* load_inodes(const char* master_file_table) {
                 free(node);
                 goto cleanup;
             }
-            // Free the original entries if they're different from the new ones
+            
             if (original_entries != (struct Extent*)node->entries) {
                 free(original_entries);
             }
         }
 
+        /* Record the node in the temporary ID map for the second pass */
         id_map = realloc(id_map, (id_map_size + 1) * sizeof(*id_map));
         if (id_map == NULL) {
             perror("Failed to allocate memory for ID map");
@@ -506,8 +534,11 @@ struct inode* load_inodes(const char* master_file_table) {
         if (strcmp(name, "/") == 0 && is_directory) {
             root = node;
         }
-    } // end of while true
+    }
 
+    /* Second pass: convert stored child ID arrays into pointer arrays for
+     * directory entries. This resolves references between nodes using the
+     * temporary `id_map` built during the first pass. */
     for (uint32_t i = 0; i < id_map_size; i++) {
         struct inode* node = id_map[i].node;
 
@@ -539,17 +570,18 @@ struct inode* load_inodes(const char* master_file_table) {
                 ptr_entries[j] = child;
             }
 
-            // Free the original id_entries before replacing
             free(id_entries);
             node->entries = (uintptr_t*)ptr_entries;
         }
     }
 
+    /* Cleanup and return the reconstructed root inode */
     fclose(file);
     free(id_map);
     return root;
 
 cleanup:
+    /* On error: free any partially built nodes and close resources. */
     if (id_map != NULL) {
         for (uint32_t i = 0; i < id_map_size; i++) {
             struct inode* node = id_map[i].node;
@@ -567,7 +599,7 @@ cleanup:
     return NULL;
 }
 
-
+/* Recursively free the entire inode tree and any allocated extents. */
 void fs_shutdown(struct inode* inode) {
     if (inode == NULL) {
         return;
@@ -587,6 +619,7 @@ void fs_shutdown(struct inode* inode) {
 
 static int indent = 0;
 
+/* Helpers used by debug_fs to collect and print block usage. */
 static void debug_fs_print_table(const char* table);
 static void debug_fs_tree_walk(struct inode* node, char* table);
 

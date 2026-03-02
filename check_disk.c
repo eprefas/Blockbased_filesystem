@@ -38,6 +38,10 @@ void alloc_n(int n)
     }
 }
 
+/* Small test program that allocates/free blocks to exercise the BAT.
+ * It formats the simulated disk then runs several allocation patterns
+ * and prints the block table after each operation.
+ */
 int main( int argc, char* argv[] )
 {
     if( argc != 2 )

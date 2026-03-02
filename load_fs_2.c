@@ -3,6 +3,7 @@
 
 #include <stdio.h>
 
+/* Load an MFT and BAT (variant 2) and perform sample lookups. */
 int main( int argc, char* argv[] )
 {
     if( argc != 3 )

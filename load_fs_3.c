@@ -3,6 +3,7 @@
 
 #include <stdio.h>
 
+/* Load an MFT and BAT (variant 3) and verify files exist in the tree. */
 int main( int argc, char* argv[] )
 {
     if( argc != 3 )

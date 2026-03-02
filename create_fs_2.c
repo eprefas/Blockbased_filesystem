@@ -3,6 +3,9 @@
 
 #include <stdio.h>
 
+/* Create another filesystem example variant and save outputs.
+ * Similar to create_fs_1 but with different directories and files.
+ */
 int main( int argc, char* argv[] )
 {
     if( argc != 3 )
@@ -20,16 +23,7 @@ int main( int argc, char* argv[] )
 
     set_block_allocation_table_name( bat_name );
 
-    /* format_disk() makes sure that the simulated
-     * disk is empty. It creates a file named
-     * block_allocation_table that contains only
-     * zeros. */
     format_disk();
-
-    /* debug_disk() write the current content of the
-     * block_allocation_table that simulates whether
-     * blocks on disk contain file data (1) or not (0).
-     */
     debug_disk();
 
     struct inode* root      = create_dir( NULL, "/" );

@@ -3,6 +3,9 @@
 
 #include <stdio.h>
 
+/* Load the master file table and block allocation table, then print the
+ * in-memory filesystem and block usage to verify correctness.
+ */
 int main( int argc, char* argv[] )
 {
     if( argc != 3 )
@@ -22,10 +25,6 @@ int main( int argc, char* argv[] )
 
     int error;
 
-    /* debug_disk() write the current content of the
-     * block_allocation_table that simulates whether
-     * blocks on disk contain file data (1) or not (0).
-     */
     debug_disk();
 
     printf("===================================\n");
