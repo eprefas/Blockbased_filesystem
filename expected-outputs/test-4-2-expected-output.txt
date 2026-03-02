@@ -1,0 +1,57 @@
+$ make test-4-2
+[?2004l[ 66%] Built target create_fs_2
+[ 83%] [34m[1mGenerating make_test_out[0m
+[100%] [34m[1mGenerating create_fs_2_test[0m
+==1896814== Memcheck, a memory error detector
+==1896814== Copyright (C) 2002-2024, and GNU GPL'd, by Julian Seward et al.
+==1896814== Using Valgrind-3.23.0 and LibVEX; rerun with -h for copyright info
+==1896814== Command: /uio/kant/ifi-ansatt-u07/griff/in2140/in2140-v25-internal/oblig-02/solution/build/create_fs_2 /uio/kant/ifi-ansatt-u07/griff/in2140/in2140-v25-internal/oblig-02/solution/test-outputs/master_file_table-create_fs_2 /uio/kant/ifi-ansatt-u07/griff/in2140/in2140-v25-internal/oblig-02/solution/test-outputs/block_allocation_table-create_fs_2
+==1896814== 
+Blocks recorded in the block allocation table:
+000: 00000000000000000000
+020: 00000000000000000000
+040: 00000000000000000000
+060: 00000000000000000000
+
+/ (id 0)
+  etc (id 1)
+    hosts (id 10 size 200)
+  share (id 2)
+    man (id 3)
+      read.2 (id 11 size 300)
+      write.2 (id 12 size 400)
+  var (id 4)
+    log (id 5)
+      message (id 7 size 50000)
+      warn (id 8 size 50000)
+      fail (id 9 size 50000)
+  kernel (id 6 size 20000)
+Blocks recorded in master file table:
+000: 11111111111111111111
+020: 11111111111111111111
+040: 11111110000000000000
+060: 00000000000000000000
+
+Blocks recorded in the block allocation table:
+000: 11111111111111111111
+020: 11111111111111111111
+040: 11111110000000000000
+060: 00000000000000000000
+
+++++++++++++++++++++++++++++++++++++++++++++++++
++ All inodes structures have been
++ deleted. The inode info is stored in
++ /uio/kant/ifi-ansatt-u07/griff/in2140/in2140-v25-internal/oblig-02/solution/test-outputs/master_file_table-create_fs_2
++ The allocated file blocks are stored in
++ /uio/kant/ifi-ansatt-u07/griff/in2140/in2140-v25-internal/oblig-02/solution/test-outputs/block_allocation_table-create_fs_2
+++++++++++++++++++++++++++++++++++++++++++++++++
+==1896814== 
+==1896814== HEAP SUMMARY:
+==1896814==     in use at exit: 0 bytes in 0 blocks
+==1896814==   total heap usage: 68 allocs, 68 frees, 37,098 bytes allocated
+==1896814== 
+==1896814== All heap blocks were freed -- no leaks are possible
+==1896814== 
+==1896814== For lists of detected and suppressed errors, rerun with: -s
+==1896814== ERROR SUMMARY: 0 errors from 0 contexts (suppressed: 0 from 0)
+[100%] Built target test-4-2

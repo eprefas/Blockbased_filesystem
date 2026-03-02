@@ -1,0 +1,94 @@
+$ make test-5-1
+[ 66%] Built target create_and_delete
+[ 83%] [34m[1mGenerating make_test_out[0m
+[100%] [34m[1mGenerating create_and_delete_test[0m
+Blocks recorded in the block allocation table:
+000: 00000000000000000000
+020: 00000000000000000000
+040: 00000000000000000000
+060: 00000000000000000000
+
+===================================
+= Create a whole filesystem       =
+===================================
+/ (id 0)
+  kernel (id 1 size 20000)
+  etc (id 2)
+    hosts (id 3 size 200)
+  usr (id 4)
+    bin (id 5)
+      ls (id 17 size 14322)
+      ps (id 18 size 13800)
+    local (id 6)
+      bin (id 7)
+        nvcc (id 8 size 28000)
+        gcc (id 9 size 12623)
+  home (id 10)
+    in2140 (id 11)
+      oblig.tgz (id 12 size 15000)
+      oblig (id 13)
+        CMakeLists.txt (id 14 size 5486)
+        inode.c (id 15 size 16988)
+        inode.h (id 16 size 4152)
+Blocks recorded in master file table:
+000: 11111111111111111111
+020: 11111111111111111100
+040: 00000000000000000000
+060: 00000000000000000000
+
+Blocks recorded in the block allocation table:
+000: 11111111111111111111
+020: 11111111111111111100
+040: 00000000000000000000
+060: 00000000000000000000
+
+===================================
+= Deleting some things            =
+===================================
+Trying to delete file gcc from / (should fail)
+Deletion failed
+Trying to delete file oblig.tgz from /home/in2140 (should succeed)
+Deletion succeeded
+Trying to delete file nvcc from /usr/local/bin (should succeed)
+Deletion succeeded
+Trying to delete directory etc from / (should fail)
+Deletion failed
+Trying to delete file hosts from /etc (should succeed)
+Deletion succeeded
+Trying to delete directory etc from / (should succeed)
+Deletion succeeded
+/ (id 0)
+  kernel (id 1 size 20000)
+  usr (id 4)
+    bin (id 5)
+      ls (id 17 size 14322)
+      ps (id 18 size 13800)
+    local (id 6)
+      bin (id 7)
+        gcc (id 9 size 12623)
+  home (id 10)
+    in2140 (id 11)
+      oblig (id 13)
+        CMakeLists.txt (id 14 size 5486)
+        inode.c (id 15 size 16988)
+        inode.h (id 16 size 4152)
+Blocks recorded in master file table:
+000: 11111000000001111000
+020: 01111111111111111100
+040: 00000000000000000000
+060: 00000000000000000000
+
+Blocks recorded in the block allocation table:
+000: 11111000000001111000
+020: 01111111111111111100
+040: 00000000000000000000
+060: 00000000000000000000
+
+++++++++++++++++++++++++++++++++++++++++++++++++
++ All inodes structures have been
++ deleted. The inode info is stored in
++ /Users/griff/GIT/course/in2140/in2140-v25-internal/oblig-02/solution/test-outputs/master_file_table-create_and_delete
++ The allocated file blocks are stored in
++ /Users/griff/GIT/course/in2140/in2140-v25-internal/oblig-02/solution/test-outputs/block_allocation_table-create_and_delete
+++++++++++++++++++++++++++++++++++++++++++++++++
+[100%] Built target test-5-1
